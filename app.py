@@ -6,6 +6,9 @@ import re
 import pandas as pd
 import streamlit as st
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from bright_data import trigger_crawl, poll_dataset, normalize_job_data, DEFAULT_COLLECTOR_ID, DEFAULT_TARGET_URL, test_bright_data_connection
 from matcher import rank_and_filter_jobs, parse_keywords
 from generator import generate_cold_email_pitch
@@ -484,8 +487,37 @@ if active_tab == "opportunities":
     with col_search2:
         search_q = st.text_input("Search", placeholder="Search role, company...", label_visibility="collapsed")
     with col_btn:
-        st.button("🔍 Check Fit", type="primary", use_container_width=True, key="btn_check_fit")
+        btn_check_fit = st.button("🔍 Check Fit", type="primary", use_container_width=True, key="btn_check_fit")
     
+    # -------------------------------------------------------------------------
+    # LIVE API TRIGGER ON CHECK FIT
+    # -------------------------------------------------------------------------
+    if btn_check_fit:
+        if env_token:
+            with st.status("Fetching live Y Combinator jobs from Bright Data...", expanded=True) as status:
+                st.write(f"📡 Triggering Scraper Studio Collector `{DEFAULT_COLLECTOR_ID}`...")
+                success, col_id, err_msg = trigger_crawl(env_token, DEFAULT_COLLECTOR_ID, DEFAULT_TARGET_URL)
+                if success:
+                    st.write(f"⚡ Crawl initiated! Collection ID: `{col_id}`. Polling live extracted dataset...")
+                    poll_success, raw_data, poll_err = poll_dataset(
+                        env_token, col_id, max_retries=6, poll_interval_seconds=3,
+                        progress_callback=lambda cur, mx, msg: st.write(f"⏳ Polling ({cur}/{mx}): {msg}")
+                    )
+                    if poll_success and raw_data:
+                        normalized = normalize_job_data(raw_data)
+                        if normalized:
+                            st.session_state["jobs_data"] = normalized
+                            status.update(label=f"✅ Scraped & Loaded {len(normalized)} Live YC Jobs!", state="complete")
+                            st.rerun()
+                        else:
+                            status.update(label="⚠️ Scraper finished but returned 0 rows, using verified dataset.", state="complete")
+                    else:
+                        status.update(label="⚠️ Scraper job queued in Bright Data cloud. Displaying current verified feed.", state="complete")
+                else:
+                    status.update(label=f"❌ Error triggering scraper: {err_msg}", state="error")
+        else:
+            st.info("No `BRIGHT_DATA_API_TOKEN` configured in `.env`. Filtering cached data.")
+
     st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
     
     displayed_jobs = scored_jobs
