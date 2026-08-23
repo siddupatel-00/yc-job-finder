@@ -459,10 +459,10 @@ active_tab = current_tab
 if active_tab == "opportunities":
     col_search1, col_search2 = st.columns([2, 1])
     with col_search1:
-        st.session_state["selected_skills"] = st.multiselect(
+        st.multiselect(
             "Keywords",
             ["Python", "AI", "React", "TypeScript", "Node", "Go", "Rust", "Remote"],
-            default=st.session_state["selected_skills"],
+            key="selected_skills",
             label_visibility="collapsed"
         )
     with col_search2:
