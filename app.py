@@ -25,6 +25,7 @@ st.set_page_config(
 
 
 
+
 if "theme_mode" not in st.session_state:
     st.session_state["theme_mode"] = "Linear Dark"
 
@@ -32,13 +33,11 @@ is_dark = "Dark" in st.session_state["theme_mode"]
 
 bg_primary = "#000000" if is_dark else "#f8f9fa"
 bg_secondary = "#0a0a0a" if is_dark else "#ffffff"
-bg_tertiary = "#121214" if is_dark else "#f1f3f5"
+bg_tertiary = "#18181b" if is_dark else "#f1f3f5"
 text_primary = "#ededed" if is_dark else "#11181c"
 text_secondary = "#a1a1aa" if is_dark else "#687076"
 border_color = "#27272a" if is_dark else "#dee2e6"
 border_hover = "#3f3f46" if is_dark else "#ced4da"
-btn_primary_bg = "#ffffff" if is_dark else "#11181c"
-btn_primary_text = "#000000" if is_dark else "#ffffff"
 
 APP_CSS = f"""
 <style>
@@ -92,15 +91,19 @@ APP_CSS = f"""
         background-color: {bg_secondary} !important;
     }}
     
-    /* Multiselect Tags */
-    [data-testid="stMultiSelect"] [data-baseweb="tag"] {{
-        background-color: {bg_tertiary} !important;
-        color: {text_primary} !important;
-        border: 1px solid {border_color} !important;
+    /* Multiselect Tags (Dark Charcoal surface with Crisp White text) */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
+    div[data-testid="stMultiSelect"] div[data-baseweb="tag"],
+    span[data-baseweb="tag"] {{
+        background-color: {"#27272a" if is_dark else "#e4e4e7"} !important;
+        border: 1px solid {"#3f3f46" if is_dark else "#d4d4d8"} !important;
         border-radius: 4px !important;
     }}
-    [data-testid="stMultiSelect"] [data-baseweb="tag"] span {{
-        color: {text_primary} !important;
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] *,
+    div[data-testid="stMultiSelect"] div[data-baseweb="tag"] *,
+    span[data-baseweb="tag"] * {{
+        color: {"#ffffff" if is_dark else "#09090b"} !important;
+        fill: {"#ffffff" if is_dark else "#09090b"} !important;
     }}
 
     /* Card Containers */
@@ -115,61 +118,17 @@ APP_CSS = f"""
         padding: 4px !important;
         box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
     }}
-    [data-testid="stVerticalBlockBorderWrapper"] * {{
-        color: {text_primary} !important;
-    }}
-    [data-testid="stVerticalBlockBorderWrapper"] .stCaption, 
-    [data-testid="stVerticalBlockBorderWrapper"] .stCaption * {{
-        color: {text_secondary} !important;
-    }}
 
-    /* Tabs Strict Monochrome Fix */
-    button[data-baseweb="tab"] {{
-        background: transparent !important;
-        color: {text_secondary} !important;
-        font-weight: 500 !important;
-        border: none !important;
-    }}
-    button[data-baseweb="tab"] * {{
-        color: {text_secondary} !important;
-    }}
-    button[data-baseweb="tab"][aria-selected="true"] {{
-        color: {text_primary} !important;
-        border-bottom: 2px solid {text_primary} !important;
-    }}
-    button[data-baseweb="tab"][aria-selected="true"] * {{
-        color: {text_primary} !important;
-    }}
-    button[data-baseweb="tab"]:hover, 
-    button[data-baseweb="tab"]:hover * {{
-        color: {text_primary} !important;
-    }}
-    button[data-baseweb="tab"]:focus,
-    button[data-baseweb="tab"]:focus * {{
-        color: {text_primary} !important;
-    }}
-    div[data-baseweb="tab-highlight"] {{
-        background-color: {text_primary} !important;
-    }}
-    div[data-baseweb="tab-border"] {{
-        background-color: {border_color} !important;
-    }}
-    
-    div[data-baseweb="tab-list"] {{
-        border-bottom: 1px solid {border_color} !important;
-        margin-bottom: 24px !important;
-    }}
-
-    /* Primary Buttons (Crisp White/Black) */
+    /* Primary Buttons (Theme toggle, refresh) */
     .stButton > button[kind="primary"], div.top-cta-btn .stButton > button {{
-        background-color: {btn_primary_bg} !important;
-        color: {btn_primary_text} !important;
-        border: 1px solid {btn_primary_bg} !important;
+        background-color: {"#ffffff" if is_dark else "#09090b"} !important;
+        color: {"#000000" if is_dark else "#ffffff"} !important;
+        border: 1px solid {"#ffffff" if is_dark else "#09090b"} !important;
         border-radius: 6px !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
     }}
     .stButton > button[kind="primary"] *, div.top-cta-btn .stButton > button * {{
-        color: {btn_primary_text} !important;
+        color: {"#000000" if is_dark else "#ffffff"} !important;
     }}
 
     /* Secondary Buttons */
@@ -183,72 +142,85 @@ APP_CSS = f"""
         color: {text_primary} !important;
     }}
 
-    /* Link Buttons */
+    /* Link Buttons (Apply -> crisp White button with bold Black text) */
     div[data-testid="stLinkButton"] > a {{
-        background-color: {btn_primary_bg} !important;
-        color: {btn_primary_text} !important;
+        background-color: {"#ffffff" if is_dark else "#09090b"} !important;
+        color: {"#000000" if is_dark else "#ffffff"} !important;
         border: none !important;
         border-radius: 6px !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
         text-decoration: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }}
+    div[data-testid="stLinkButton"] > a * {{
+        color: {"#000000" if is_dark else "#ffffff"} !important;
+        font-weight: 600 !important;
     }}
 
     /* Micro Badges */
     .micro-badge {{
         display: inline-flex;
         align-items: center;
-        padding: 4px 10px;
-        background: {bg_tertiary} !important;
-        color: {text_primary} !important;
-        border: 1px solid {border_color};
-        border-radius: 6px;
+        padding: 3px 8px;
+        background: transparent !important;
+        color: {text_secondary} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 4px;
         font-size: 0.75rem;
         font-weight: 500;
-        margin-right: 8px;
-        margin-top: 4px;
-        margin-bottom: 4px;
+        margin-right: 6px;
+        margin-top: 3px;
+        margin-bottom: 3px;
     }}
     
     .match-badge {{
-        color: {btn_primary_text} !important;
-        background-color: {btn_primary_bg} !important;
-        border-color: {btn_primary_bg} !important;
+        color: {"#ffffff" if is_dark else "#09090b"} !important;
+        background-color: {"#27272a" if is_dark else "#e4e4e7"} !important;
+        border: 1px solid {"#3f3f46" if is_dark else "#d4d4d8"} !important;
+        font-weight: 600 !important;
     }}
 
-    
     .micro-badge-matched {{
-        background: {text_primary} !important;
-        color: {bg_primary} !important;
-        border-color: {text_primary} !important;
+        background-color: {"#27272a" if is_dark else "#e4e4e7"} !important;
+        color: {"#ffffff" if is_dark else "#09090b"} !important;
+        border: 1px solid {"#3f3f46" if is_dark else "#d4d4d8"} !important;
+        font-weight: 600 !important;
     }}
     .micro-badge-missing {{
-        opacity: 0.6;
+        color: {"#71717a" if is_dark else "#a1a1aa"} !important;
+        border-color: {border_color} !important;
     }}
 
-    
-    /* URL-routed Segmented Navigation Tabs */
+    /* URL-routed Segmented Navigation Tabs (Pill style) */
     div[data-testid="stRadio"] {{
-        border-bottom: 1px solid {border_color} !important;
-        margin-bottom: 20px !important;
-        padding-bottom: 4px !important;
+        border: none !important;
+        margin-bottom: 16px !important;
     }}
     div[data-testid="stRadio"] > div[role="radiogroup"] {{
         display: flex !important;
         flex-direction: row !important;
-        gap: 2rem !important;
+        gap: 0.75rem !important;
         background: transparent !important;
     }}
     div[data-testid="stRadio"] label {{
-        background: transparent !important;
-        border: none !important;
-        padding: 0 0 8px 0 !important;
+        background: {"#121214" if is_dark else "#f4f4f5"} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 6px !important;
+        padding: 6px 14px !important;
         cursor: pointer !important;
         font-weight: 500 !important;
-        font-size: 0.95rem !important;
+        font-size: 0.85rem !important;
         color: {text_secondary} !important;
-        margin-bottom: -5px !important;
+        display: flex !important;
+        align-items: center !important;
+        transition: all 0.15s ease !important;
     }}
-    div[data-testid="stRadio"] label:hover,
+    div[data-testid="stRadio"] label:hover {{
+        border-color: {border_hover} !important;
+        color: {text_primary} !important;
+    }}
     div[data-testid="stRadio"] label:hover * {{
         color: {text_primary} !important;
     }}
@@ -256,11 +228,12 @@ APP_CSS = f"""
         display: none !important;
     }}
     div[data-testid="stRadio"] label[data-checked="true"] {{
-        color: {text_primary} !important;
-        border-bottom: 2px solid {text_primary} !important;
+        background: {"#ffffff" if is_dark else "#09090b"} !important;
+        border-color: {"#ffffff" if is_dark else "#09090b"} !important;
+        color: {"#000000" if is_dark else "#ffffff"} !important;
     }}
     div[data-testid="stRadio"] label[data-checked="true"] * {{
-        color: {text_primary} !important;
+        color: {"#000000" if is_dark else "#ffffff"} !important;
         font-weight: 600 !important;
     }}
 
@@ -319,6 +292,7 @@ APP_CSS = f"""
     }}
 </style>
 """
+
 
 
 
