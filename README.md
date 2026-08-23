@@ -1,123 +1,172 @@
-# ⚡ AI Job Hunter — Powered by Bright Data
+# AI Job Hunter - Autonomous Startup Intelligence Platform
 
-> **Hackathon Project**: Autonomous Y Combinator job discovery & AI-driven skill matching engine powered by **Bright Data Web Scraper Studio**.
-
----
-
-## 🌟 Overview
-
-**AI Job Hunter** turns the tedious process of finding relevant startup jobs into a seamless, real-time experience. It orchestrates automated web crawling via **Bright Data Scraper Studio**, standardizes job postings from Y Combinator, and runs a multi-factor AI matching and ranking algorithm tailored to your skills, tech stack, and location preferences.
+AI Job Hunter is a specialized data ingestion, intelligence, and candidate-matching platform designed for startup opportunities. The system orchestrates automated web data collection via Bright Data Web Scraper Studio, processes and standardizes unstructured job postings, runs multi-factor heuristic matching against target technical profiles, generates tailored outreach pitches, and surfaces real-time compensation and market intelligence.
 
 ---
 
-## 🕷️ Bright Data Scraper Studio Integration
+## Architecture and Data Flow
 
-The application integrates directly with Bright Data's Data Collector API (DCA):
+```
++-------------------------------------------------------------------------+
+|                        Bright Data Cloud Engine                         |
+|                                                                         |
+|  +---------------------------+       Trigger        +----------------+  |
+|  | Target Job Board:         | <------------------- | DCA Collector: |  |
+|  | ycombinator.com/jobs      |                      | c_mt5wl2m71... |  |
+|  +---------------------------+                      +----------------+  |
+|               |                                              |          |
+|               | Extraction & Parsing                         | Job ID   |
+|               v                                              v          |
+|  +-------------------------------------------------------------------+  |
+|  |                     Dataset Endpoint Delivery                     |  |
+|  +-------------------------------------------------------------------+  |
++-------------------------------------------------------------------------+
+                                    |
+                                    | Async Polling (GET /dca/dataset)
+                                    v
++-------------------------------------------------------------------------+
+|                         Local Processing Layer                          |
+|                                                                         |
+|  +--------------------+    Raw NDJSON/JSON    +----------------------+  |
+|  | bright_data.py     | --------------------> | Normalization Engine |  |
+|  +--------------------+                       +----------------------+  |
+|                                                          |              |
+|                                                          | Clean Dicts  |
+|                                                          v              |
+|  +--------------------+   Candidate Profile   +----------------------+  |
+|  | matcher.py         | <-------------------- | Weighted Match Engine|  |
+|  | - Skill Overlap    |                       +----------------------+  |
+|  | - Title Relevance  |                                  |              |
+|  | - Location Fit     |                                  | Scored Jobs  |
+|  +--------------------+                                  v              |
+|                                               +----------------------+  |
+|                                               | generator.py         |  |
+|                                               | - Cold Email Pitch   |  |
+|                                               +----------------------+  |
+|                                                          |              |
+|                                                          v              |
+|  +--------------------+                       +----------------------+  |
+|  | analytics.py       | <-------------------- | Streamlit Interface  |  |
+|  | - Stack Frequency  |                       | (app.py)             |  |
+|  | - Stage Comp Dist  |                       +----------------------+  |
+|  +--------------------+                                                 |
++-------------------------------------------------------------------------+
+```
 
-| Parameter | Value |
-| :--- | :--- |
-| **Collector ID** | `c_mt5wl2m71k9t9f0bwj` |
-| **Target Job Board** | `https://www.ycombinator.com/jobs` |
-| **Collector Studio** | Bright Data Scraper Studio |
-| **Auth Header** | `Authorization: Bearer <BRIGHT_DATA_API_TOKEN>` |
+---
 
-### 1. Trigger Crawl (Function 1)
-Initiates the data collection job on Bright Data's cloud infrastructure:
-```http
-POST https://api.brightdata.com/dca/trigger?collector=c_mt5wl2m71k9t9f0bwj&queue_next=1
-Headers:
+## Core Modules
+
+The codebase is organized into discrete, modular components:
+
+- **`app.py`**: Main application entry point and user interface built with Streamlit. Implements dynamic query-parameter routing (`?tab=...`), state management, real-time filtering, responsive layout rendering, and visual display cards.
+- **`bright_data.py`**: Client module managing communication with the Bright Data Data Collector API (DCA). Handles crawl execution triggers, asynchronous dataset polling with exponential backoff, payload normalization, and API connection diagnostics.
+- **`matcher.py`**: Multi-factor scoring and ranking engine. Computes fit percentages based on direct skill overlap (45%), title alignment (30%), description context (15%), and location/remote preferences (10%). Generates matched vs. missing skill matrices.
+- **`generator.py`**: Pitch generation engine that constructs structured, contextual cold email templates targeting company domain requirements, tech stack alignment, and candidate background.
+- **`analytics.py`**: Statistical aggregation service computing compensation percentiles across funding stages (Seed, Series A, Series B) and technology stack frequency distributions.
+- **`sample_data.py`**: High-fidelity fallback dataset containing validated startup job listings across modern batch cohorts, used for instant caching, development, and offline execution.
+
+---
+
+## Bright Data Integration Specifications
+
+The application directly communicates with Bright Data Scraper Studio through REST endpoints:
+
+### Configuration Parameters
+- **Collector ID**: `c_mt5wl2m71k9t9f0bwj`
+- **Target URL**: `https://www.ycombinator.com/jobs`
+- **Authentication**: Bearer Token via HTTP Header (`Authorization: Bearer <TOKEN>`)
+
+### 1. Trigger Crawl (`trigger_crawl`)
+Initiates the data collection job on Bright Data's cloud infrastructure.
+
+- **Method**: `POST`
+- **Endpoint**: `https://api.brightdata.com/dca/trigger?collector=c_mt5wl2m71k9t9f0bwj&queue_next=1`
+- **Headers**:
+  ```http
   Authorization: Bearer <BRIGHT_DATA_API_TOKEN>
   Content-Type: application/json
+  ```
+- **Payload**:
+  ```json
+  [
+    {
+      "url": "https://www.ycombinator.com/jobs"
+    }
+  ]
+  ```
+- **Response**: Returns a JSON object containing `collection_id` (or `response_id`).
 
-Payload:
-[
-  { "url": "https://www.ycombinator.com/jobs" }
-]
-```
-The response returns a unique `collection_id` (or `response_id`).
+### 2. Dataset Polling (`poll_dataset`)
+Retrieves the extracted dataset once the crawler finishes execution.
 
-### 2. Poll Dataset (Function 2)
-Polls the dataset endpoint until Bright Data completes scraping:
-```http
-GET https://api.brightdata.com/dca/dataset?id={COLLECTION_ID}
-Headers:
+- **Method**: `GET`
+- **Endpoint**: `https://api.brightdata.com/dca/dataset?id={COLLECTION_ID}`
+- **Headers**:
+  ```http
   Authorization: Bearer <BRIGHT_DATA_API_TOKEN>
-```
-Returns structured JSON / NDJSON job records containing job titles, companies, locations, compensation, skills, and descriptions.
+  ```
+- **Execution Strategy**: Polling loop executed with interval delays (`poll_interval_seconds=3`) up to a maximum retry threshold (`max_retries=6`). Returns HTTP 200 with JSON/NDJSON records upon completion.
 
 ---
 
-## 🧠 Job Matching & Ranking Engine
+## Setup and Execution
 
-The matcher calculates a weighted relevance score (0% – 100%) for each job:
+### Prerequisites
+- Python 3.10, 3.11, 3.12, or 3.13
+- Git
+- Valid Bright Data API Token (optional for live crawling; offline cache works out-of-the-box)
 
-- **Skills & Tech Stack Overlap (45%)**: Matches user keywords against the job's tags and tech stack.
-- **Title Relevance (30%)**: Matches keywords against job titles (e.g. Senior AI Engineer vs "AI").
-- **Description Deep Scan (15%)**: Scans job descriptions for specific tools and methodologies.
-- **Location Preference (10%)**: Boosts jobs matching preferred locations or Remote status.
-
----
-
-## 🎨 Minimalist Monochrome Design
-
-- **Black & White Simple Color Palette**: High contrast, distraction-free aesthetic with crisp typography and clean card layouts.
-- **Dark Mode & Light Mode**: Live toggle switch to seamlessly shift between high-contrast dark theme and crisp light theme.
-
----
-
-## 🚀 Quickstart Guide
-
-### 1. Clone & Navigate to Project
+### Step 1: Clone Repository
 ```bash
-cd /Users/siddu/.gemini/antigravity/scratch/ai-job-hunter
+git clone https://github.com/siddupatel-00/yc-job-finder.git
+cd yc-job-finder
 ```
 
-### 2. Install Dependencies
+### Step 2: Configure Virtual Environment
 ```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+
+# On Windows:
+# .\venv\Scripts\activate
+```
+
+### Step 3: Install Dependencies
+```bash
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
-Copy `.env.example` to `.env` and set your API token:
+### Step 4: Configure Environment Variables
+Copy the example environment file and insert your API credentials:
 ```bash
 cp .env.example .env
 ```
-Inside `.env`:
-```env
+
+Edit `.env`:
+```ini
 BRIGHT_DATA_API_TOKEN=your_bright_data_api_token_here
 BRIGHT_DATA_COLLECTOR_ID=c_mt5wl2m71k9t9f0bwj
-TARGET_JOB_URL=https://www.ycombinator.com/jobs
 ```
 
-### 4. Run the Streamlit Application
+### Step 5: Launch Application
 ```bash
 streamlit run app.py
 ```
-Open your browser at `http://localhost:8501`.
+
+The application will initialize and become available locally at `http://localhost:8501`.
 
 ---
 
-## 📁 Project Structure
+## Routing & Deep Links
 
-```
-ai-job-hunter/
-├── app.py              # Main Streamlit web application & monochrome UI
-├── bright_data.py      # Bright Data DCA client (trigger & polling logic)
-├── matcher.py          # Relevance scoring & ranking engine
-├── sample_data.py      # High-fidelity Y Combinator dataset for demos & offline testing
-├── requirements.txt    # Python dependencies (streamlit, requests, python-dotenv, pandas)
-├── .env.example        # Environment variables template
-├── .env                # Local environment configuration
-└── README.md           # Project documentation
-```
-
----
-
-## ⚡ Key Features
-
-- **⚡ Bright Data DCA Trigger & Poller**: Live integration with Collector `c_mt5wl2m71k9t9f0bwj`.
-- **🎯 Smart Skill Filters**: Quick-select keyword pills (`Python`, `AI`, `Remote`, `LLMs`, `React`, `FastAPI`, `Go`, `Rust`).
-- **📊 Real-time Dashboard**: Live metrics for Total Crawled, Matching Jobs, Top Score, and Active Filters.
-- **📩 Automated Email Alert Mockup**: Simulated instant/digest email notification generator.
-- **💾 Export Capabilities**: Instant CSV and JSON downloads of ranked matches.
-- **🌗 Dark & Light Theme**: Pure black-and-white minimalist design.
+The interface supports direct deep linking via query parameters:
+- `http://localhost:8501/?tab=opportunities`: Active job opportunities and filter panel.
+- `http://localhost:8501/?tab=pitch-generator`: Cold outreach email generator.
+- `http://localhost:8501/?tab=analytics`: Compensation distributions and tech stack intelligence.
+- `http://localhost:8501/?tab=terminal`: Bright Data DCA API configuration and diagnostics.
