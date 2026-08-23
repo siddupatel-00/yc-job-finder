@@ -227,18 +227,18 @@ APP_CSS = f"""
 
     
     /* URL-routed Segmented Navigation Tabs */
-    div[data-testid="stRadio"] {
+    div[data-testid="stRadio"] {{
         border-bottom: 1px solid {border_color} !important;
         margin-bottom: 20px !important;
         padding-bottom: 4px !important;
-    }
-    div[data-testid="stRadio"] > div[role="radiogroup"] {
+    }}
+    div[data-testid="stRadio"] > div[role="radiogroup"] {{
         display: flex !important;
         flex-direction: row !important;
         gap: 2rem !important;
         background: transparent !important;
-    }
-    div[data-testid="stRadio"] label {
+    }}
+    div[data-testid="stRadio"] label {{
         background: transparent !important;
         border: none !important;
         padding: 0 0 8px 0 !important;
@@ -247,22 +247,22 @@ APP_CSS = f"""
         font-size: 0.95rem !important;
         color: {text_secondary} !important;
         margin-bottom: -5px !important;
-    }
+    }}
     div[data-testid="stRadio"] label:hover,
-    div[data-testid="stRadio"] label:hover * {
+    div[data-testid="stRadio"] label:hover * {{
         color: {text_primary} !important;
-    }
-    div[data-testid="stRadio"] label > div:first-child {
+    }}
+    div[data-testid="stRadio"] label > div:first-child {{
         display: none !important;
-    }
-    div[data-testid="stRadio"] label[data-checked="true"] {
+    }}
+    div[data-testid="stRadio"] label[data-checked="true"] {{
         color: {text_primary} !important;
         border-bottom: 2px solid {text_primary} !important;
-    }
-    div[data-testid="stRadio"] label[data-checked="true"] * {
+    }}
+    div[data-testid="stRadio"] label[data-checked="true"] * {{
         color: {text_primary} !important;
         font-weight: 600 !important;
-    }
+    }}
 
     /* Hide metric deltas */
     [data-testid="stMetricDelta"] {{
