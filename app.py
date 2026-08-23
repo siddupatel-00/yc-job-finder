@@ -565,6 +565,51 @@ elif active_tab == "analytics":
 # TAB 4: TERMINAL
 # =============================================================================
 elif active_tab == "terminal":
+    st.markdown("### Bright Data Scraper Terminal")
+    
+    col_stat1, col_stat2 = st.columns(2)
+    with col_stat1:
+        with st.container(border=True):
+            st.caption("API TOKEN STATUS")
+            if env_token:
+                st.markdown("### Active / Detected")
+                st.caption(f"Masked: `{env_token[:4]}...{env_token[-4:] if len(env_token) > 8 else ''}`")
+            else:
+                st.markdown("### Missing")
+                st.caption("Add `BRIGHT_DATA_API_TOKEN` to your `.env` file.")
+
+    with col_stat2:
+        with st.container(border=True):
+            st.caption("SCRAPER STATUS")
+            st.markdown(f"### Connected to `{DEFAULT_COLLECTOR_ID}`")
+            st.caption(f"Target: `{DEFAULT_TARGET_URL}`")
+
     with st.container(border=True):
-        st.markdown("#### Scraper Config")
-        st.code(f"Collector ID: {DEFAULT_COLLECTOR_ID}\nTarget URL: {DEFAULT_TARGET_URL}", language="yaml")
+        st.markdown("#### Live Collector Diagnostics")
+        st.markdown("Verify authentication and cloud endpoint latency with Bright Data Scraper Studio.")
+        
+        if st.button("Run Live Connection Test", key="btn_run_test", type="primary"):
+            if not env_token:
+                st.error("Cannot run live test: BRIGHT_DATA_API_TOKEN is not configured.")
+            else:
+                with st.spinner("Pinging Bright Data DCA endpoint..."):
+                    latency, is_ok, msg = test_bright_data_connection(env_token)
+                    if is_ok:
+                        st.success(f"[SUCCESS] Authenticated & Connected to Bright Data (HTTP 200) - Latency: {latency:.2f}s")
+                        st.code(json.dumps({
+                            "status": "online",
+                            "collector_id": DEFAULT_COLLECTOR_ID,
+                            "latency_seconds": round(latency, 3),
+                            "target_url": DEFAULT_TARGET_URL,
+                            "authenticated": True
+                        }, indent=2), language="json")
+                    else:
+                        st.error(f"[ERROR] {msg}")
+
+        st.markdown("---")
+        st.markdown("#### Scraper Specifications")
+        st.code(f"""Collector ID: {DEFAULT_COLLECTOR_ID}
+Target Job Board: {DEFAULT_TARGET_URL}
+Trigger Endpoint: https://api.brightdata.com/dca/trigger?collector={DEFAULT_COLLECTOR_ID}&queue_next=1
+Dataset Endpoint: https://api.brightdata.com/dca/dataset?id={{COLLECTION_ID}}
+Auth Header: Authorization: Bearer <TOKEN>""", language="yaml")
