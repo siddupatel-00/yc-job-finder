@@ -457,16 +457,34 @@ active_tab = current_tab
 # TAB 1: OPPORTUNITIES
 # =============================================================================
 if active_tab == "opportunities":
-    col_search1, col_search2 = st.columns([2, 1])
+    # Compile comprehensive, dynamic skill pool from dataset + industry standards
+    core_skill_set = {
+        "Python", "TypeScript", "JavaScript", "Go", "Rust", "C++", "Java", "Solidity", "SQL",
+        "AI", "Machine Learning", "LLM", "NLP", "PyTorch", "TensorFlow", "RAG", "LangChain", 
+        "Agents", "Computer Vision", "HuggingFace", "Fine-tuning", "VectorDB",
+        "React", "Next.js", "Vue", "Node", "FastAPI", "Django", "GraphQL", "TailwindCSS",
+        "PostgreSQL", "MongoDB", "Redis", "Kafka", "gRPC", "Distributed Systems",
+        "Docker", "Kubernetes", "AWS", "GCP", "Microservices", "CI/CD", "Remote"
+    }
+    for j in raw_pool:
+        for s in j.get("skills", []):
+            if s:
+                core_skill_set.add(s)
+    
+    all_skill_options = sorted(list(core_skill_set))
+
+    col_search1, col_search2, col_btn = st.columns([2.5, 1.6, 0.9], vertical_alignment="bottom")
     with col_search1:
         st.multiselect(
-            "Keywords",
-            ["Python", "AI", "React", "TypeScript", "Node", "Go", "Rust", "Remote"],
+            "Keywords & Tech Stack",
+            options=all_skill_options,
             key="selected_skills",
             label_visibility="collapsed"
         )
     with col_search2:
-        search_q = st.text_input("Search", placeholder="Role, company...", label_visibility="collapsed")
+        search_q = st.text_input("Search", placeholder="Search role, company...", label_visibility="collapsed")
+    with col_btn:
+        st.button("🔍 Check Fit", type="primary", use_container_width=True, key="btn_check_fit")
     
     st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
     
