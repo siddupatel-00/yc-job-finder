@@ -91,17 +91,20 @@ APP_CSS = f"""
         background-color: {bg_secondary} !important;
     }}
     
-    /* Multiselect Tags (Dark Charcoal surface with Crisp White text) */
+        /* Multiselect Tags (High-Contrast Charcoal Pill) */
+    [data-baseweb="tag"],
+    div[data-testid="stMultiSelect"] [data-baseweb="tag"],
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
-    div[data-testid="stMultiSelect"] div[data-baseweb="tag"],
-    span[data-baseweb="tag"] {{
-        background-color: {"#27272a" if is_dark else "#e4e4e7"} !important;
-        border: 1px solid {"#3f3f46" if is_dark else "#d4d4d8"} !important;
+    div[data-testid="stMultiSelect"] div[data-baseweb="tag"] {{
+        background-color: {"#27272a" if is_dark else "#f4f4f5"} !important;
+        background: {"#27272a" if is_dark else "#f4f4f5"} !important;
+        border: 1px solid {"#3f3f46" if is_dark else "#e4e4e7"} !important;
         border-radius: 4px !important;
     }}
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] *,
-    div[data-testid="stMultiSelect"] div[data-baseweb="tag"] *,
-    span[data-baseweb="tag"] * {{
+    [data-baseweb="tag"] *,
+    [data-baseweb="tag"] span,
+    div[data-testid="stMultiSelect"] [data-baseweb="tag"] *,
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] * {{
         color: {"#ffffff" if is_dark else "#09090b"} !important;
         fill: {"#ffffff" if is_dark else "#09090b"} !important;
     }}
@@ -399,38 +402,56 @@ with m3:
 # -----------------------------------------------------------------------------
 # MAIN CONTENT (URL QUERY PARAM DEEP LINKING ROUTING)
 # -----------------------------------------------------------------------------
-st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-
-TAB_KEYS = ["opportunities", "pitch-generator", "analytics", "terminal"]
-TAB_LABELS = {
-    "opportunities": f"Opportunities ({len(scored_jobs)})",
-    "pitch-generator": "Pitch Generator",
-    "analytics": "Analytics",
-    "terminal": "Terminal"
-}
+st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
 # Read current active tab from URL query params
-current_tab_param = st.query_params.get("tab", "opportunities")
-if current_tab_param not in TAB_KEYS:
-    current_tab_param = "opportunities"
+current_tab = st.query_params.get("tab", "opportunities")
+if current_tab not in ["opportunities", "pitch-generator", "analytics", "terminal"]:
+    current_tab = "opportunities"
 
-def handle_tab_change():
-    st.query_params["tab"] = st.session_state["url_nav_tab"]
+nav_c1, nav_c2, nav_c3, nav_c4, _ = st.columns([1.6, 1.6, 1.2, 1.2, 3], vertical_alignment="center")
 
-active_tab = st.radio(
-    "Navigation Tabs",
-    options=TAB_KEYS,
-    format_func=lambda k: TAB_LABELS[k],
-    index=TAB_KEYS.index(current_tab_param),
-    horizontal=True,
-    label_visibility="collapsed",
-    key="url_nav_tab",
-    on_change=handle_tab_change
-)
+with nav_c1:
+    if st.button(
+        f"Opportunities ({len(scored_jobs)})", 
+        key="nav_btn_opps", 
+        type="primary" if current_tab == "opportunities" else "secondary",
+        use_container_width=True
+    ):
+        st.query_params["tab"] = "opportunities"
+        st.rerun()
 
-# Ensure query params stay synced
-if st.query_params.get("tab") != active_tab:
-    st.query_params["tab"] = active_tab
+with nav_c2:
+    if st.button(
+        "Pitch Generator", 
+        key="nav_btn_pitch", 
+        type="primary" if current_tab == "pitch-generator" else "secondary",
+        use_container_width=True
+    ):
+        st.query_params["tab"] = "pitch-generator"
+        st.rerun()
+
+with nav_c3:
+    if st.button(
+        "Analytics", 
+        key="nav_btn_analytics", 
+        type="primary" if current_tab == "analytics" else "secondary",
+        use_container_width=True
+    ):
+        st.query_params["tab"] = "analytics"
+        st.rerun()
+
+with nav_c4:
+    if st.button(
+        "Terminal", 
+        key="nav_btn_terminal", 
+        type="primary" if current_tab == "terminal" else "secondary",
+        use_container_width=True
+    ):
+        st.query_params["tab"] = "terminal"
+        st.rerun()
+
+active_tab = current_tab
 
 # =============================================================================
 # TAB 1: OPPORTUNITIES
